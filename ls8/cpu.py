@@ -27,8 +27,8 @@ class CPU:
         self.ram = [0] * 256
         self.pc = 0
         self.registers = [0] * 8
-        self.sp = 7
-        self.fl = 6
+        self.reg[7] = 0xF4 
+        self.fl = 0b00000000
         self.running = False
 
         self.operations = {}
@@ -44,7 +44,6 @@ class CPU:
         self.operations[JMP] = self.handle_JMP
         self.operations[JEQ] = self.handle_JEQ
         self.operations[JNE] = self.handle_JNE
-        self.operations[ADD] = self.handle_ADD
         
 
          
@@ -75,10 +74,10 @@ class CPU:
             print("usage: ls8.py filename")
             sys.exit(1)
 
-        progname = sys.argv[1]
+        program_name = sys.argv[1]
         address = 0
 
-        with open(progname) as f:
+        with open(program_name) as f:
             for line in f:
                 line = line.split("#")[0]
                 line = line.strip()
@@ -162,46 +161,38 @@ class CPU:
         self.pc += ir_len
 
     def handle_CALL(self):
+        self.reg[7] -= 1
+        self.ram[self.reg[7]] = self.pc + 2
         given_reg = self.ram[self.pc + 1]
-        self.sp -= 1
-        self.ram[self.sp] = self.pc + 2
         self.pc = self.reg[given_reg]
 
     def handle_RET(self):
-        self.pc = self.ram[self.sp]
+        self.pc = self.ram[self.reg[7]]
         self.reg[7] += 1
 
     def handle_CMP(self):
-        operand_a = self.ram_read(self.pc + 1)
-        operand_b = self.ram_read(self.pc + 2)
-        self.alu('CMP', operand_a, operand_b)
+        op_a = self.ram_read(self.pc + 1)
+        op_b = self.ram_read(self.pc + 2)
+        self.alu('CMP', op_a, op_b)
         self.pc += 3
 
     def handle_JMP(self):
-        reg_index = self.ram_read(self.pc + 1)
-        self.pc = self.reg[reg_index]
+        reg = self.ram_read(self.pc + 1)
+        self.pc = self.reg[reg]
 
     def handle_JEQ(self):
         if self.fl == 0b00000001:
-            reg_index = self.ram_read(self.pc + 1)
-            self.pc = self.reg[reg_index]
+            reg = self.ram_read(self.pc + 1)
+            self.pc = self.reg[reg]
         else:
             self.pc += 2
 
     def handle_JNE(self):
         if self.fl != 0b00000001:
-            reg_index = self.ram_read(self.pc + 1)
-            self.pc = self.reg[reg_index]
+            reg = self.ram_read(self.pc + 1)
+            self.pc = self.reg[reg]
         else:
             self.pc += 2
-    def handle_ADD(self):
-        operand_a = self.ram_read(self.pc + 1)
-        operand_b = self.ram_read(self.pc + 2)
-        self.alu('ADD', operand_a, operand_b)
-        self.pc += 3
-
-
-
 
     def trace(self):
         """
